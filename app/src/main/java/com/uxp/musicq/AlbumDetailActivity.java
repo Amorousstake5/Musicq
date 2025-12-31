@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AlbumDetailActivity extends AppCompatActivity {
@@ -32,7 +31,6 @@ public class AlbumDetailActivity extends AppCompatActivity {
             MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
             musicService = binder.getService();
             serviceBound = true;
-            musicService.setSongList(albumSongs);
         }
 
         @Override
@@ -91,6 +89,7 @@ public class AlbumDetailActivity extends AppCompatActivity {
 
     private void onSongClick(Song song, int position) {
         if (musicService != null) {
+            musicService.setSongList(albumSongs);
             musicService.playSong(position);
         }
     }

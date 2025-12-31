@@ -20,7 +20,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlayerActivity extends AppCompatActivity {
+public class PlayerActivity extends AppCompatActivity implements MusicService.PlayerUpdateListener {
     private MusicService musicService;
     private boolean serviceBound = false;
     private RecyclerView recyclerView;
@@ -37,6 +37,7 @@ public class PlayerActivity extends AppCompatActivity {
     private boolean isShuffle = false;
     private boolean isRepeat = false;
     private String currentView = "songs";
+    private boolean userSeeking = false;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -44,7 +45,10 @@ public class PlayerActivity extends AppCompatActivity {
             MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
             musicService = binder.getService();
             serviceBound = true;
+            musicService.registerListener(PlayerActivity.this);
             loadMusic();
+            updateUIFromService();
+            startSeekBarUpdate();
         }
 
         @Override
@@ -63,7 +67,6 @@ public class PlayerActivity extends AppCompatActivity {
         setupBottomNav();
         bindMusicService();
 
-        // Show player card only when music is playing
         playerCard.setVisibility(View.GONE);
     }
 
@@ -91,10 +94,8 @@ public class PlayerActivity extends AppCompatActivity {
             if (musicService != null) {
                 if (musicService.isPlaying()) {
                     musicService.pause();
-                    btnPlay.setImageResource(R.drawable.ic_play);
                 } else {
                     musicService.play();
-                    btnPlay.setImageResource(R.drawable.ic_pause);
                 }
             }
         });
@@ -102,14 +103,12 @@ public class PlayerActivity extends AppCompatActivity {
         btnNext.setOnClickListener(v -> {
             if (musicService != null) {
                 musicService.playNext();
-                updateUIFromService();
             }
         });
 
         btnPrev.setOnClickListener(v -> {
             if (musicService != null) {
                 musicService.playPrevious();
-                updateUIFromService();
             }
         });
 
@@ -134,13 +133,23 @@ public class PlayerActivity extends AppCompatActivity {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && musicService != null) {
-                    musicService.seekTo(progress);
+                if (fromUser) {
+                    txtCurrentTime.setText(formatTime(progress));
                 }
             }
 
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                userSeeking = true;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (musicService != null) {
+                    musicService.seekTo(seekBar.getProgress());
+                }
+                userSeeking = false;
+            }
         });
     }
 
@@ -206,9 +215,7 @@ public class PlayerActivity extends AppCompatActivity {
             allSongs = loader.loadSongs();
 
             if (allSongs.isEmpty()) {
-                Toast.makeText(this, "No music files found on device", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, "Found " + allSongs.size() + " songs", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "No music found", Toast.LENGTH_LONG).show();
             }
 
             songAdapter.updateSongs(allSongs);
@@ -218,8 +225,7 @@ public class PlayerActivity extends AppCompatActivity {
                 musicService.setSongList(allSongs);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error loading music: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Error loading music", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -235,9 +241,7 @@ public class PlayerActivity extends AppCompatActivity {
             }
 
             recyclerView.setAdapter(albumAdapter);
-            Toast.makeText(this, "Found " + albums.size() + " albums", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            e.printStackTrace();
             Toast.makeText(this, "Error loading albums", Toast.LENGTH_SHORT).show();
         }
     }
@@ -251,12 +255,12 @@ public class PlayerActivity extends AppCompatActivity {
                 playlistAdapter = new PlaylistAdapter(playlists, new PlaylistAdapter.OnPlaylistClickListener() {
                     @Override
                     public void onPlaylistClick(Playlist playlist, int position) {
-                        // TODO: Show playlist songs
+                        Toast.makeText(PlayerActivity.this, "Playlist: " + playlist.getName(), Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onPlaylistLongClick(Playlist playlist, int position) {
-                        // TODO: Show delete/edit options
+                        Toast.makeText(PlayerActivity.this, "Long press", Toast.LENGTH_SHORT).show();
                     }
                 });
             } else {
@@ -264,12 +268,7 @@ public class PlayerActivity extends AppCompatActivity {
             }
 
             recyclerView.setAdapter(playlistAdapter);
-
-            if (playlists.isEmpty()) {
-                Toast.makeText(this, "No playlists yet. Create one!", Toast.LENGTH_SHORT).show();
-            }
         } catch (Exception e) {
-            e.printStackTrace();
             Toast.makeText(this, "Error loading playlists", Toast.LENGTH_SHORT).show();
         }
     }
@@ -277,10 +276,7 @@ public class PlayerActivity extends AppCompatActivity {
     private void onSongClick(Song song, int position) {
         if (musicService != null) {
             musicService.playSong(position);
-            updateUI(song);
-            btnPlay.setImageResource(R.drawable.ic_pause);
             playerCard.setVisibility(View.VISIBLE);
-            updateSeekBar();
         }
     }
 
@@ -292,37 +288,46 @@ public class PlayerActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void updateUI(Song song) {
-        txtSongTitle.setText(song.getTitle());
-        txtArtist.setText(song.getArtist());
-        txtTotalTime.setText(song.getFormattedDuration());
-        AlbumArtLoader.loadAlbumArt(this, song.getAlbumId(), imgAlbumArt);
-        seekBar.setMax((int) song.getDuration());
+    @Override
+    public void onSongChanged(Song song) {
+        runOnUiThread(() -> {
+            if (song != null) {
+                txtSongTitle.setText(song.getTitle());
+                txtArtist.setText(song.getArtist());
+                txtTotalTime.setText(song.getFormattedDuration());
+                seekBar.setMax((int) song.getDuration());
+                AlbumArtLoader.loadAlbumArt(this, song.getAlbumId(), imgAlbumArt);
+                playerCard.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    @Override
+    public void onPlaybackStateChanged(boolean isPlaying) {
+        runOnUiThread(() -> {
+            btnPlay.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
+        });
     }
 
     private void updateUIFromService() {
         if (musicService != null && musicService.getCurrentSong() != null) {
-            updateUI(musicService.getCurrentSong());
+            onSongChanged(musicService.getCurrentSong());
+            onPlaybackStateChanged(musicService.isPlaying());
         }
     }
 
-    private void updateSeekBar() {
+    private void startSeekBarUpdate() {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (musicService != null && musicService.isPlaying()) {
+                if (musicService != null && !userSeeking) {
                     int currentPos = musicService.getCurrentPosition();
                     seekBar.setProgress(currentPos);
                     txtCurrentTime.setText(formatTime(currentPos));
-
-                    // Update play/pause button state
-                    btnPlay.setImageResource(R.drawable.ic_pause);
-                } else if (musicService != null && !musicService.isPlaying()) {
-                    btnPlay.setImageResource(R.drawable.ic_play);
                 }
-                handler.postDelayed(this, 1000);
+                handler.postDelayed(this, 500);
             }
-        }, 1000);
+        }, 500);
     }
 
     private String formatTime(int milliseconds) {
@@ -336,7 +341,8 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         handler.removeCallbacksAndMessages(null);
-        if (serviceBound) {
+        if (serviceBound && musicService != null) {
+            musicService.unregisterListener(this);
             unbindService(serviceConnection);
             serviceBound = false;
         }
@@ -345,8 +351,8 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentView.equals("songs")) {
-            loadMusic();
+        if (musicService != null) {
+            updateUIFromService();
         }
     }
 }

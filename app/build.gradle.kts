@@ -10,8 +10,8 @@ android {
         applicationId = "com.uxp.musicq"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "2025.12.31.1900Vibe"
+        versionCode = 4
+        versionName = "2025.12.31.2000Vibe"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.recyclerview)
+    implementation(libs.media)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

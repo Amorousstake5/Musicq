@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_create_playlist"
+        android:title="Create Playlist"
+        android:icon="@drawable/ic_playlist" />
+    <item
+        android:id="@+id/menu_settings"
+        android:title="Settings"
+        android:icon="@drawable/ic_music" />
+    <item
+        android:id="@+id/menu_credits"
+        android:title="Credits"
+        android:icon="@drawable/ic_album" />
+</menu>

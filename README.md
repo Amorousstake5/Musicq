@@ -270,6 +270,6 @@ Found a bug? Please open an [issue](https://github.com/Amorousstake5/Musicq/issu
 
 Made with ❤️ by the Musicq Dev
 
-[Report Bug](https://github.com/yourusername/harmoniq/issues) • [Request Feature](https://github.com/yourusername/harmoniq/issues)
+[Report Bug](https://github.com/Amorousstake5/Musicq/issues) • [Request Feature](https://github.com/Amorousstake5/Musicq/issues)
 
 </div>

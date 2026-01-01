@@ -56,7 +56,7 @@
 
 ## 📱 Screenshots
 
-<div align="center">
+<div align="center" id="#screenshots">
 
 |Launch Animation | Main Player | Fullscreen | Albums | Settings |
 |-----------------|------------|------------|---------|----------|

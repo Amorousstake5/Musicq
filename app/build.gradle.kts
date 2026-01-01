@@ -10,8 +10,8 @@ android {
         applicationId = "com.uxp.musicq"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
-        versionName = "2025.12.31.2000Vibe"
+        versionCode = 6
+        versionName = "2026.01.01.2000NewVibe"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

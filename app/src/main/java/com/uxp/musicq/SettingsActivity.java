@@ -1,18 +1,40 @@
 package com.uxp.musicq;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 
 public class SettingsActivity extends AppCompatActivity {
     private SharedPreferences prefs;
+    private MusicService musicService;
+    private boolean serviceBound = false;
     private SeekBar seekBarVolume, seekBarSpeed, seekBarPitch, seekBarCrossfade;
     private TextView txtVolume, txtSpeed, txtPitch, txtCrossfade;
-    private Switch switchEqualizer, switchBassBoost, switchVirtualizer;
+    private Switch switchEqualizer, switchBassBoost, switchVirtualizer, switchBatterySaver;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
+            musicService = binder.getService();
+            serviceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,6 +42,10 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         prefs = getSharedPreferences("harmoniq_settings", MODE_PRIVATE);
+
+        Intent intent = new Intent(this, MusicService.class);
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+
         initViews();
         loadSettings();
         setupListeners();
@@ -46,6 +72,7 @@ public class SettingsActivity extends AppCompatActivity {
         switchEqualizer = findViewById(R.id.switchEqualizer);
         switchBassBoost = findViewById(R.id.switchBassBoost);
         switchVirtualizer = findViewById(R.id.switchVirtualizer);
+        switchBatterySaver = findViewById(R.id.switchBatterySaver);
     }
 
     private void loadSettings() {
@@ -64,6 +91,7 @@ public class SettingsActivity extends AppCompatActivity {
         switchEqualizer.setChecked(prefs.getBoolean("equalizer", false));
         switchBassBoost.setChecked(prefs.getBoolean("bass_boost", false));
         switchVirtualizer.setChecked(prefs.getBoolean("virtualizer", false));
+        switchBatterySaver.setChecked(prefs.getBoolean("battery_saver", false));
     }
 
     private void setupListeners() {
@@ -79,6 +107,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 saveInt("volume", seekBar.getProgress());
+                Toast.makeText(SettingsActivity.this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -96,6 +125,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
                 float speed = 0.5f + (seekBar.getProgress() / 100.0f);
                 saveFloat("speed", speed);
+                Toast.makeText(SettingsActivity.this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -113,6 +143,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
                 float pitch = 0.5f + (seekBar.getProgress() / 100.0f);
                 saveFloat("pitch", pitch);
+                Toast.makeText(SettingsActivity.this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -131,14 +162,29 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        switchEqualizer.setOnCheckedChangeListener((buttonView, isChecked) ->
-                saveBoolean("equalizer", isChecked));
+        switchEqualizer.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveBoolean("equalizer", isChecked);
+            Toast.makeText(this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
+        });
 
-        switchBassBoost.setOnCheckedChangeListener((buttonView, isChecked) ->
-                saveBoolean("bass_boost", isChecked));
+        switchBassBoost.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveBoolean("bass_boost", isChecked);
+            Toast.makeText(this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
+        });
 
-        switchVirtualizer.setOnCheckedChangeListener((buttonView, isChecked) ->
-                saveBoolean("virtualizer", isChecked));
+        switchVirtualizer.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveBoolean("virtualizer", isChecked);
+            Toast.makeText(this, "Restart playback to apply", Toast.LENGTH_SHORT).show();
+        });
+
+        switchBatterySaver.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveBoolean("battery_saver", isChecked);
+            if (musicService != null) {
+                musicService.setBatterySaverMode(isChecked);
+            }
+            Toast.makeText(this, isChecked ? "Battery saver enabled" : "Battery saver disabled",
+                    Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void updateLabels() {
@@ -160,5 +206,13 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void saveBoolean(String key, boolean value) {
         prefs.edit().putBoolean(key, value).apply();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (serviceBound) {
+            unbindService(serviceConnection);
+        }
     }
 }

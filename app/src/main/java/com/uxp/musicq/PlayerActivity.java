@@ -1,5 +1,4 @@
 package com.uxp.musicq;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -90,6 +89,11 @@ public class PlayerActivity extends AppCompatActivity implements MusicService.Pl
     }
 
     private void setupControlListeners() {
+        playerCard.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FullPlayerActivity.class);
+            startActivity(intent);
+        });
+
         btnPlay.setOnClickListener(v -> {
             if (musicService != null) {
                 if (musicService.isPlaying()) {

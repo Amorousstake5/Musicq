@@ -62,6 +62,18 @@
             android:screenOrientation="portrait"
             android:theme="@style/Base.Theme.Musicq" />
 
+        <activity
+            android:name=".FullPlayerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Base.Theme.Musicq" />
+
+        <activity
+            android:name=".MetadataActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Base.Theme.Musicq" />
+
         <service
             android:name=".MusicService"
             android:enabled="true"

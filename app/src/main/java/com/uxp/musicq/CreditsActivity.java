@@ -27,7 +27,7 @@ public class CreditsActivity extends AppCompatActivity {
 
     private void setupCredits() {
         TextView txtVersion = findViewById(R.id.txtVersion);
-        txtVersion.setText("Version 2025.12.31.1840Vibing");
+        txtVersion.setText("Version 2026.01.01.2000NewVibe");
 
         MaterialCardView cardDeveloper = findViewById(R.id.cardDeveloper);
         MaterialCardView cardLibraries = findViewById(R.id.cardLibraries);

@@ -6,18 +6,27 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.media.AudioManager;
+import android.media.MediaMetadata;
 import android.media.MediaPlayer;
+import android.media.audiofx.BassBoost;
+import android.media.audiofx.Equalizer;
+import android.media.audiofx.Virtualizer;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 
 public class MusicService extends Service {
     private MediaPlayer mediaPlayer;
@@ -30,6 +39,14 @@ public class MusicService extends Service {
     private static final String TAG = "MusicService";
     private static final String CHANNEL_ID = "harmoniq_playback";
     private static final int NOTIFICATION_ID = 1;
+    private MediaSession mediaSession;
+    private SharedPreferences prefs;
+    private PowerManager.WakeLock wakeLock;
+    private boolean batterySaverMode = false;
+
+    private Equalizer equalizer;
+    private BassBoost bassBoost;
+    private Virtualizer virtualizer;
 
     public static final String ACTION_PLAY = "com.example.harmoniq.PLAY";
     public static final String ACTION_PAUSE = "com.example.harmoniq.PAUSE";
@@ -53,10 +70,14 @@ public class MusicService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        prefs = getSharedPreferences("harmoniq_settings", MODE_PRIVATE);
         createNotificationChannel();
+        initMediaSession();
+        initWakeLock();
 
         try {
             mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             songList = new ArrayList<>();
 
             mediaPlayer.setOnCompletionListener(mp -> {
@@ -73,13 +94,21 @@ public class MusicService extends Service {
             });
 
             mediaPlayer.setOnPreparedListener(mp -> {
+                applyAudioSettings();
                 mp.start();
+                updateMediaSession();
                 showNotification();
                 notifyPlaybackStateChanged(true);
             });
         } catch (Exception e) {
             Log.e(TAG, "Error initializing", e);
         }
+    }
+
+    private void initWakeLock() {
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HarmoniQ::MusicPlayback");
+        wakeLock.setReferenceCounted(false);
     }
 
     private void createNotificationChannel() {
@@ -93,6 +122,138 @@ public class MusicService extends Service {
             if (manager != null) {
                 manager.createNotificationChannel(channel);
             }
+        }
+    }
+
+    private void initMediaSession() {
+        mediaSession = new MediaSession(this, "HarmoniQSession");
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS |
+                MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+
+        mediaSession.setCallback(new MediaSession.Callback() {
+            @Override
+            public void onPlay() {
+                play();
+            }
+
+            @Override
+            public void onPause() {
+                pause();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                playNext();
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                playPrevious();
+            }
+
+            @Override
+            public void onStop() {
+                stopForeground(true);
+                stopSelf();
+            }
+
+            @Override
+            public void onSeekTo(long pos) {
+                seekTo((int) pos);
+            }
+        });
+
+        mediaSession.setActive(true);
+    }
+
+    private void updateMediaSession() {
+        Song song = getCurrentSong();
+        if (song == null) return;
+
+        MediaMetadata.Builder builder = new MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, song.getTitle())
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, song.getArtist())
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, song.getAlbum())
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, song.getDuration());
+
+        Bitmap albumArt = AlbumArtLoader.getAlbumArt(this, song.getAlbumId());
+        if (albumArt != null) {
+            builder.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, albumArt);
+        }
+
+        mediaSession.setMetadata(builder.build());
+
+        PlaybackState.Builder stateBuilder = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
+                        PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS |
+                        PlaybackState.ACTION_SEEK_TO)
+                .setState(isPlaying() ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                        getCurrentPosition(), 1.0f);
+
+        mediaSession.setPlaybackState(stateBuilder.build());
+    }
+
+    private void applyAudioSettings() {
+        try {
+            int volume = prefs.getInt("volume", 100);
+            float vol = volume / 100.0f;
+            mediaPlayer.setVolume(vol, vol);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                float speed = prefs.getFloat("speed", 1.0f);
+                float pitch = prefs.getFloat("pitch", 1.0f);
+
+                if (!batterySaverMode) {
+                    mediaPlayer.setPlaybackParams(
+                            mediaPlayer.getPlaybackParams().setSpeed(speed).setPitch(pitch)
+                    );
+                }
+            }
+
+            int audioSessionId = mediaPlayer.getAudioSessionId();
+
+            if (prefs.getBoolean("equalizer", false) && !batterySaverMode) {
+                if (equalizer == null) {
+                    equalizer = new Equalizer(0, audioSessionId);
+                }
+                equalizer.setEnabled(true);
+            } else if (equalizer != null) {
+                equalizer.setEnabled(false);
+            }
+
+            if (prefs.getBoolean("bass_boost", false) && !batterySaverMode) {
+                if (bassBoost == null) {
+                    bassBoost = new BassBoost(0, audioSessionId);
+                }
+                bassBoost.setStrength((short) 500);
+                bassBoost.setEnabled(true);
+            } else if (bassBoost != null) {
+                bassBoost.setEnabled(false);
+            }
+
+            if (prefs.getBoolean("virtualizer", false) && !batterySaverMode) {
+                if (virtualizer == null) {
+                    virtualizer = new Virtualizer(0, audioSessionId);
+                }
+                virtualizer.setStrength((short) 500);
+                virtualizer.setEnabled(true);
+            } else if (virtualizer != null) {
+                virtualizer.setEnabled(false);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying settings", e);
+        }
+    }
+
+    public void setBatterySaverMode(boolean enabled) {
+        this.batterySaverMode = enabled;
+        if (enabled) {
+            if (equalizer != null) equalizer.setEnabled(false);
+            if (bassBoost != null) bassBoost.setEnabled(false);
+            if (virtualizer != null) virtualizer.setEnabled(false);
+        } else {
+            applyAudioSettings();
         }
     }
 
@@ -168,6 +329,10 @@ public class MusicService extends Service {
                 mediaPlayer.setDataSource(song.getPath());
                 mediaPlayer.prepareAsync();
                 notifySongChanged(song);
+
+                if (!batterySaverMode && !wakeLock.isHeld()) {
+                    wakeLock.acquire();
+                }
             }
         } catch (IOException e) {
             Log.e(TAG, "Error playing song", e);
@@ -180,8 +345,13 @@ public class MusicService extends Service {
         try {
             if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
                 mediaPlayer.start();
+                updateMediaSession();
                 showNotification();
                 notifyPlaybackStateChanged(true);
+
+                if (!batterySaverMode && !wakeLock.isHeld()) {
+                    wakeLock.acquire();
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error playing", e);
@@ -192,8 +362,13 @@ public class MusicService extends Service {
         try {
             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
+                updateMediaSession();
                 showNotification();
                 notifyPlaybackStateChanged(false);
+
+                if (wakeLock.isHeld()) {
+                    wakeLock.release();
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error pausing", e);
@@ -230,8 +405,8 @@ public class MusicService extends Service {
         Song currentSong = getCurrentSong();
         if (currentSong == null) return;
 
-        Intent notificationIntent = new Intent(this, PlayerActivity.class);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        Intent notificationIntent = new Intent(this, FullPlayerActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -253,6 +428,7 @@ public class MusicService extends Service {
                 .setSmallIcon(R.drawable.ic_music)
                 .setContentTitle(currentSong.getTitle())
                 .setContentText(currentSong.getArtist())
+                .setSubText(currentSong.getAlbum())
                 .setLargeIcon(albumArt)
                 .setContentIntent(pendingIntent)
                 .setOngoing(isPlaying())
@@ -262,6 +438,7 @@ public class MusicService extends Service {
                         isPlaying() ? "Pause" : "Play", playPendingIntent)
                 .addAction(R.drawable.ic_skip_next, "Next", nextPendingIntent)
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setMediaSession(MediaSessionCompat.Token.fromToken(mediaSession.getSessionToken()))
                         .setShowActionsInCompactView(0, 1, 2))
                 .build();
 
@@ -272,6 +449,7 @@ public class MusicService extends Service {
         try {
             if (mediaPlayer != null) {
                 mediaPlayer.seekTo(position);
+                updateMediaSession();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error seeking", e);
@@ -313,6 +491,20 @@ public class MusicService extends Service {
     public void onDestroy() {
         super.onDestroy();
         listeners.clear();
+
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+
+        if (equalizer != null) equalizer.release();
+        if (bassBoost != null) bassBoost.release();
+        if (virtualizer != null) virtualizer.release();
+
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.release();
+        }
+
         try {
             if (mediaPlayer != null) {
                 if (mediaPlayer.isPlaying()) {

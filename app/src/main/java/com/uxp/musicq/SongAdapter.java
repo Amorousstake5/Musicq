@@ -63,7 +63,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             txtTitle.setText(song.getTitle());
             txtArtist.setText(song.getArtist());
             txtDuration.setText(song.getFormattedDuration());
-            AlbumArtLoader.loadAlbumArt(itemView.getContext(), song.getAlbumId(), imgAlbumArt);
+            AlbumArtLoader.loadAlbumArt(itemView.getContext(), song.getPath(), imgAlbumArt);
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

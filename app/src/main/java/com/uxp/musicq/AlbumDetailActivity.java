@@ -72,7 +72,10 @@ public class AlbumDetailActivity extends AppCompatActivity {
 
         txtAlbumName.setText(albumName);
         txtArtist.setText(artistName);
-        AlbumArtLoader.loadAlbumArt(this, albumId, imgAlbumArt);
+
+        if (!albumSongs.isEmpty()) {
+            AlbumArtLoader.loadAlbumArt(this, albumSongs.get(0).getPath(), imgAlbumArt);
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }

@@ -10,8 +10,8 @@ android {
         applicationId = "com.uxp.musicq"
         minSdk = 24
         targetSdk = 35
-        versionCode = 6
-        versionName = "2026.01.01.2000NewVibe"
+        versionCode = 7
+        versionName = "2026.01.02.1300NewVibe"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.recyclerview)
+    implementation(libs.jaudiotagger)
     implementation(libs.media)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

@@ -58,7 +58,7 @@ public class SongSelectionAdapter extends RecyclerView.Adapter<SongSelectionAdap
         void bind(Song song) {
             txtTitle.setText(song.getTitle());
             txtArtist.setText(song.getArtist());
-            AlbumArtLoader.loadAlbumArt(itemView.getContext(), song.getAlbumId(), imgAlbumArt);
+            AlbumArtLoader.loadAlbumArt(itemView.getContext(), song.getPath(), imgAlbumArt);
 
             checkbox.setOnCheckedChangeListener(null);
             checkbox.setChecked(false);

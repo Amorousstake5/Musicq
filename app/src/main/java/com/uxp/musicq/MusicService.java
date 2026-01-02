@@ -176,7 +176,7 @@ public class MusicService extends Service {
                 .putString(MediaMetadata.METADATA_KEY_ALBUM, song.getAlbum())
                 .putLong(MediaMetadata.METADATA_KEY_DURATION, song.getDuration());
 
-        Bitmap albumArt = AlbumArtLoader.getAlbumArt(this, song.getAlbumId());
+        Bitmap albumArt = AlbumArtLoader.getAlbumArt(this, song.getPath());
         if (albumArt != null) {
             builder.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, albumArt);
         }
@@ -422,7 +422,7 @@ public class MusicService extends Service {
         PendingIntent prevPendingIntent = PendingIntent.getService(
                 this, 2, prevIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Bitmap albumArt = AlbumArtLoader.getAlbumArt(this, currentSong.getAlbumId());
+        Bitmap albumArt = AlbumArtLoader.getAlbumArt(this, currentSong.getPath());
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_music)

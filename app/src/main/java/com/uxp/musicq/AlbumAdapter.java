@@ -63,7 +63,13 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
             txtAlbumName.setText(album.getName());
             txtArtist.setText(album.getArtist());
             txtSongCount.setText(album.getSongCount() + " songs");
-            AlbumArtLoader.loadAlbumArt(itemView.getContext(), album.getId(), imgAlbumArt);
+
+            // Load album art from first song in album
+            if (album.getFirstSongPath() != null) {
+                AlbumArtLoader.loadAlbumArt(itemView.getContext(), album.getFirstSongPath(), imgAlbumArt);
+            } else {
+                imgAlbumArt.setImageResource(R.drawable.default_album_art);
+            }
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

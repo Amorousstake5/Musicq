@@ -170,7 +170,7 @@ public class FullPlayerActivity extends AppCompatActivity implements MusicServic
                 txtAlbum.setText(song.getAlbum());
                 txtTotalTime.setText(song.getFormattedDuration());
                 seekBar.setMax((int) song.getDuration());
-                AlbumArtLoader.loadAlbumArt(this, song.getAlbumId(), imgAlbumArt);
+                AlbumArtLoader.loadAlbumArt(this, song.getPath(), imgAlbumArt);
             }
         });
     }

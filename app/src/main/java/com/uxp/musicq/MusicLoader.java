@@ -169,6 +169,13 @@ public class MusicLoader {
                         int songCount = cursor.getInt(songsColumn);
 
                         Album albumObj = new Album(id, album, artist, songCount);
+
+                        // Get first song path for album art
+                        List<Song> albumSongs = loadSongsByAlbum(id);
+                        if (!albumSongs.isEmpty()) {
+                            albumObj.setFirstSongPath(albumSongs.get(0).getPath());
+                        }
+
                         albums.add(albumObj);
                     } catch (Exception e) {
                         Log.e(TAG, "Error loading individual album", e);

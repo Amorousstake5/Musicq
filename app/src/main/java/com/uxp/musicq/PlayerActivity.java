@@ -1,4 +1,5 @@
 package com.uxp.musicq;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -300,7 +301,7 @@ public class PlayerActivity extends AppCompatActivity implements MusicService.Pl
                 txtArtist.setText(song.getArtist());
                 txtTotalTime.setText(song.getFormattedDuration());
                 seekBar.setMax((int) song.getDuration());
-                AlbumArtLoader.loadAlbumArt(this, song.getAlbumId(), imgAlbumArt);
+                AlbumArtLoader.loadAlbumArt(this, song.getPath(), imgAlbumArt);
                 playerCard.setVisibility(View.VISIBLE);
             }
         });
@@ -358,5 +359,12 @@ public class PlayerActivity extends AppCompatActivity implements MusicService.Pl
         if (musicService != null) {
             updateUIFromService();
         }
+        MemoryManager.checkMemory(this);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        MemoryManager.onLowMemory();
     }
 }

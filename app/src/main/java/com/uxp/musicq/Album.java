@@ -5,6 +5,7 @@ public class Album {
     private String name;
     private String artist;
     private int songCount;
+    private String firstSongPath;
 
     public Album(long id, String name, String artist, int songCount) {
         this.id = id;
@@ -27,6 +28,14 @@ public class Album {
 
     public int getSongCount() {
         return songCount;
+    }
+
+    public String getFirstSongPath() {
+        return firstSongPath;
+    }
+
+    public void setFirstSongPath(String path) {
+        this.firstSongPath = path;
     }
 
     @Override

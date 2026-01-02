@@ -50,7 +50,7 @@ public class MetadataActivity extends AppCompatActivity {
 
         if (filePath == null) return;
 
-        AlbumArtLoader.loadAlbumArt(this, albumId, imgAlbumArt);
+        AlbumArtLoader.loadAlbumArt(this, filePath, imgAlbumArt);
 
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {

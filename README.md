@@ -56,11 +56,11 @@
 
 ## 📱 Screenshots
 
-<div align="center">
+<div align="center" id="#screenshots">
 
-| Main Player | Fullscreen | Albums | Settings |
-|------------|------------|---------|----------|
-| ![Main](screenshots/main.png) | ![Fullscreen](screenshots/fullscreen.png) | ![Albums](screenshots/albums.png) | ![Settings](screenshots/settings.png) |
+|Launch Animation | Main Player | Fullscreen | Albums | Settings |
+|-----------------|------------|------------|---------|----------|
+| ![Launch](screenshots/Launch.png) |![Main](screenshots/MainPlayer.png) | ![Fullscreen](screenshots/mainview.png) | ![Albums](screenshots/AlbumActivity.png) | ![Settings](screenshots/Settings.png) | 
 
 </div>
 

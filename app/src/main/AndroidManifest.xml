@@ -40,43 +40,43 @@
         <activity
             android:name=".PlayerActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".AlbumDetailActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".CreatePlaylistActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".CreditsActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".FullPlayerActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <activity
             android:name=".MetadataActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/Base.Theme.Musicq" />
 
         <service

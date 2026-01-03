@@ -177,9 +177,7 @@ public class FullPlayerActivity extends AppCompatActivity implements MusicServic
 
     @Override
     public void onPlaybackStateChanged(boolean isPlaying) {
-        runOnUiThread(() -> {
-            btnPlay.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
-        });
+        runOnUiThread(() -> btnPlay.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play));
     }
 
     private void updateUIFromService() {

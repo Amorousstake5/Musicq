@@ -38,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
             webSettings.setDomStorageEnabled(true);
             webSettings.setAllowFileAccess(true);
             webView.loadUrl("file:///android_asset/splash_animation.html");
+            // Allow audio to play without a user click
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -75,9 +77,6 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 checkAudioPermission();
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13
-            checkAudioPermission();
         } else {
             // Android 10 and below
             if (ContextCompat.checkSelfPermission(this,

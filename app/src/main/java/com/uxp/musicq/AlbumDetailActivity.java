@@ -18,9 +18,8 @@ public class AlbumDetailActivity extends AppCompatActivity {
     private MusicService musicService;
     private boolean serviceBound = false;
     private RecyclerView recyclerView;
-    private SongAdapter songAdapter;
-    private ImageView imgAlbumArt;
-    private TextView txtAlbumName, txtArtist, txtSongCount;
+    private TextView txtSongCount;
+    private ImageView imgAlbumArt; // Moved to class level for easier access
     private long albumId;
     private String albumName, artistName;
     private List<Song> albumSongs;
@@ -44,10 +43,11 @@ public class AlbumDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_album_detail);
 
-        getIntentData();
-        initViews();
-        loadAlbumSongs();
-        bindMusicService();
+        // Order matters!
+        getIntentData();    // 1. Get IDs from Intent
+        initViews();        // 2. Link XML IDs to Java objects (findViewById)
+        loadAlbumSongs();   // 3. Load data and fill the views now that they aren't null
+        bindMusicService(); // 4. Connect to service
     }
 
     private void getIntentData() {
@@ -64,18 +64,15 @@ public class AlbumDetailActivity extends AppCompatActivity {
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        // We find all views here, but don't use 'albumSongs' yet because it's null
         imgAlbumArt = findViewById(R.id.imgAlbumArt);
-        txtAlbumName = findViewById(R.id.txtAlbumName);
-        txtArtist = findViewById(R.id.txtArtist);
+        TextView txtAlbumName = findViewById(R.id.txtAlbumName);
+        TextView txtArtist = findViewById(R.id.txtArtist);
         txtSongCount = findViewById(R.id.txtSongCount);
         recyclerView = findViewById(R.id.recyclerView);
 
         txtAlbumName.setText(albumName);
         txtArtist.setText(artistName);
-
-        if (!albumSongs.isEmpty()) {
-            AlbumArtLoader.loadAlbumArt(this, albumSongs.get(0).getPath(), imgAlbumArt);
-        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
@@ -84,14 +81,24 @@ public class AlbumDetailActivity extends AppCompatActivity {
         MusicLoader loader = new MusicLoader(this);
         albumSongs = loader.loadSongsByAlbum(albumId);
 
-        txtSongCount.setText(albumSongs.size() + " songs");
+        // Add safety check: Ensure the list was loaded and views are ready
+        if (albumSongs != null) {
+            txtSongCount.setText(String.format("%d songs", albumSongs.size()));
 
-        songAdapter = new SongAdapter(albumSongs, this::onSongClick);
-        recyclerView.setAdapter(songAdapter);
+            if (!albumSongs.isEmpty()) {
+                // Now it's safe to use albumSongs because it was just initialized above
+                AlbumArtLoader.loadAlbumArt(this, albumSongs.get(0).getPath(), imgAlbumArt);
+            }
+
+            SongAdapter songAdapter = new SongAdapter(albumSongs, this::onSongClick);
+            recyclerView.setAdapter(songAdapter);
+        } else {
+            txtSongCount.setText("0 songs");
+        }
     }
 
     private void onSongClick(Song song, int position) {
-        if (musicService != null) {
+        if (musicService != null && albumSongs != null) {
             musicService.setSongList(albumSongs);
             musicService.playSong(position);
         }

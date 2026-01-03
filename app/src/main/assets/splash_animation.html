@@ -1,154 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musicq</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial Black', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+
+        /* Hardware Accelerated Layering */
+        #stage { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+
+        /* Text Styles */
+        .text-layer { position: absolute; text-align: center; width: 100%; will-change: opacity, transform; }
+
+        #brand {
+            font-size: 3rem; color: #fff; letter-spacing: 8px; opacity: 0;
+            animation: popIn 0.5s ease-out forwards;
         }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
+
+        #sargam {
+            font-size: 2rem; color: #00d2ff; text-shadow: 0 0 15px #00d2ff; opacity: 0;
         }
-        #logo {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 48px;
-            font-weight: bold;
-            font-family: 'Arial', sans-serif;
-            text-shadow: 0 0 20px rgba(255,255,255,0.5);
-            z-index: 10;
-            animation: pulse 2s ease-in-out infinite;
+
+        #uxp {
+            font-size: 6rem; color: #ff0033; letter-spacing: -5px; opacity: 0; transform: scale(0.5);
+            text-shadow: 0 0 40px #ff0000;
         }
-        @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-        }
+
+        /* Canvas stays in background */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.8; }
+
+        /* Animations */
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { to { opacity: 0; transform: scale(1.1); } }
+        @keyframes uxpBoom { 0% { opacity: 0; transform: scale(3); } 80% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<div id="logo">Musicq</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="stage">
+    <canvas id="waveCanvas"></canvas>
+    <div id="brand" class="text-layer">MusicQ</div>
+    <div id="sargam" class="text-layer"></div>
+    <div id="uxp" class="text-layer">UxP</div>
+</div>
+
 <script>
-    const canvas = document.getElementById('canvas');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+    // --- CONFIGURATION ---
+    const SPEEDS = {
+        sargamInterval: 250, // Faster text switching (ms)
+        waveSpeed: 0.2       // Faster wave flow
+    };
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.position.z = 5;
+    // --- AUDIO ENGINE (Lightweight) ---
+    const AudioEngine = {
+        ctx: null,
+        init: function() {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new window.AudioContext();
+        },
+        play: function(freq) {
+            if (!this.ctx) this.init();
+            if (this.ctx.state === 'suspended') this.ctx.resume(); // Try to force resume
 
-    const particles = [];
-    const particleCount = 1000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.frequency.value = freq;
+            osc.type = 'sine';
 
-    const colorPalette = [
-        new THREE.Color(0xff006e),
-        new THREE.Color(0x8338ec),
-        new THREE.Color(0x3a86ff),
-        new THREE.Color(0xfb5607),
-        new THREE.Color(0xffbe0b)
-    ];
+            // Click-less envelope
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
 
-    for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3;
-        positions[i3] = (Math.random() - 0.5) * 10;
-        positions[i3 + 1] = (Math.random() - 0.5) * 10;
-        positions[i3 + 2] = (Math.random() - 0.5) * 10;
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.3);
+        }
+    };
 
-        const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-        colors[i3] = color.r;
-        colors[i3 + 1] = color.g;
-        colors[i3 + 2] = color.b;
-
-        particles.push({
-            velocity: new THREE.Vector3(
-                (Math.random() - 0.5) * 0.02,
-                (Math.random() - 0.5) * 0.02,
-                (Math.random() - 0.5) * 0.02
-            ),
-            originalPos: new THREE.Vector3(positions[i3], positions[i3 + 1], positions[i3 + 2])
-        });
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-        size: 0.05,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.8,
-        blending: THREE.AdditiveBlending
-    });
-
-    const particleSystem = new THREE.Points(geometry, material);
-    scene.add(particleSystem);
-
-    const ringGeometry = new THREE.TorusGeometry(2, 0.1, 16, 100);
-    const ringMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.3,
-        wireframe: true
-    });
-    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-    scene.add(ring);
-
+    // --- VISUAL ENGINE ---
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for no transparency on base
+    let width, height, cy;
     let time = 0;
 
-    function animate() {
-        requestAnimationFrame(animate);
-        time += 0.01;
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        cy = height / 2 + 60;
+        ctx.strokeStyle = '#00d2ff';
+        ctx.lineWidth = 2;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-        const positions = particleSystem.geometry.attributes.position.array;
+    function drawWave() {
+        // Clear with slight trailing effect for motion blur feel, or pure black for speed
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, height);
 
-        for (let i = 0; i < particleCount; i++) {
-            const i3 = i * 3;
-            const particle = particles[i];
-
-            positions[i3] += particle.velocity.x;
-            positions[i3 + 1] += particle.velocity.y;
-            positions[i3 + 2] += particle.velocity.z;
-
-            positions[i3 + 1] += Math.sin(time + i * 0.1) * 0.01;
-
-            if (Math.abs(positions[i3]) > 5) particle.velocity.x *= -1;
-            if (Math.abs(positions[i3 + 1]) > 5) particle.velocity.y *= -1;
-            if (Math.abs(positions[i3 + 2]) > 5) particle.velocity.z *= -1;
+        ctx.beginPath();
+        // OPTIMIZATION: Step by 5 pixels instead of 1
+        for (let x = 0; x < width; x += 5) {
+            // Simplified Quantum Math: 2 overlapping waves
+            const y = cy + Math.sin(x * 0.01 + time) * 30 + Math.sin(x * 0.02 - time * 1.5) * 15;
+            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
+        ctx.stroke();
 
-        particleSystem.geometry.attributes.position.needsUpdate = true;
-        particleSystem.rotation.y += 0.001;
-        particleSystem.rotation.x = Math.sin(time * 0.5) * 0.2;
-
-        ring.rotation.x += 0.01;
-        ring.rotation.y += 0.02;
-        ring.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
-
-        renderer.render(scene, camera);
+        time += SPEEDS.waveSpeed;
+        requestAnimationFrame(drawWave);
     }
 
-    animate();
+    // --- SEQUENCER ---
+    window.onload = () => {
+        // 1. Start Wave Background
+        drawWave();
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+        // 2. Start Audio Sequence
+        const brand = document.getElementById('brand');
+        const sargam = document.getElementById('sargam');
+        const uxp = document.getElementById('uxp');
+        const notes = ["Sa", "Re", "Ga", "Ma", "Pa", "Dha", "Ni", "Sa"];
+        const freqs = [256, 288, 320, 341, 384, 427, 480, 512];
+
+        setTimeout(async () => {
+            // Fade out Brand
+            brand.style.animation = "fadeOut 0.5s forwards";
+            sargam.style.opacity = "1";
+
+            // Loop through Notes
+            for (let i = 0; i < notes.length; i++) {
+                sargam.innerText = notes[i];
+                AudioEngine.play(freqs[i]);
+                // Wait for next note
+                await new Promise(r => setTimeout(r, SPEEDS.sargamInterval));
+            }
+
+            // Final Transition
+            sargam.style.opacity = "0";
+            uxp.style.animation = "uxpBoom 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards";
+
+            // Optional: Redirect after animation
+            // setTimeout(() => window.location.href = "home.html", 2000);
+
+        }, 1000); // Wait 1s before starting sequence
+    };
 </script>
-<p>Photo by Brett Jordan from Pexels:<br> https://www.pexels.com/photo/black-and-gray-vinyl-record-2746823/</p>
 </body>
 </html>

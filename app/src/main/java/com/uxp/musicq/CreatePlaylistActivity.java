@@ -10,6 +10,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CreatePlaylistActivity extends AppCompatActivity {
     private TextInputEditText edtPlaylistName;
@@ -69,7 +70,7 @@ public class CreatePlaylistActivity extends AppCompatActivity {
     }
 
     private void createPlaylist() {
-        String name = edtPlaylistName.getText().toString().trim();
+        String name = Objects.requireNonNull(edtPlaylistName.getText()).toString().trim();
 
         if (name.isEmpty()) {
             Toast.makeText(this, "Please enter playlist name", Toast.LENGTH_SHORT).show();

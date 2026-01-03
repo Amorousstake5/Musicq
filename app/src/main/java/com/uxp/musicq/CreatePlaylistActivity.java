@@ -18,7 +18,7 @@ public class CreatePlaylistActivity extends AppCompatActivity {
     private SongSelectionAdapter songAdapter;
     private List<Song> allSongs;
     private List<Song> selectedSongs;
-    private PlaylistManager playlistManager;
+    private XspfPlaylistManager playlistManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +42,7 @@ public class CreatePlaylistActivity extends AppCompatActivity {
         btnCreatePlaylist = findViewById(R.id.btnCreatePlaylist);
         recyclerView = findViewById(R.id.recyclerView);
 
-        playlistManager = new PlaylistManager(this);
+        playlistManager = new XspfPlaylistManager(this);
         selectedSongs = new ArrayList<>();
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -81,12 +81,9 @@ public class CreatePlaylistActivity extends AppCompatActivity {
             return;
         }
 
-        long playlistId = playlistManager.createPlaylist(name);
+        boolean success = playlistManager.createPlaylist(name, selectedSongs);
 
-        if (playlistId != -1) {
-            for (Song song : selectedSongs) {
-                playlistManager.addSongToPlaylist(playlistId, song.getId());
-            }
+        if (success) {
             Toast.makeText(this, "Playlist created successfully", Toast.LENGTH_SHORT).show();
             finish();
         } else {

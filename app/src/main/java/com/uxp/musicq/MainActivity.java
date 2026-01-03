@@ -3,9 +3,12 @@ package com.uxp.musicq;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.provider.Settings;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +18,7 @@ import androidx.core.content.ContextCompat;
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int SPLASH_DURATION = 3000;
+    private static final int ALL_FILES_ACCESS_REQUEST = 101;
     private WebView webView;
 
     @Override
@@ -39,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void checkPermissions() {
+    /*private void checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -57,6 +61,66 @@ public class MainActivity extends AppCompatActivity {
                         PERMISSION_REQUEST_CODE);
             } else {
                 proceedToApp();
+            }
+        }
+    }*/
+
+    private void checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ - Request All Files Access
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, ALL_FILES_ACCESS_REQUEST);
+            } else {
+                checkAudioPermission();
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13
+            checkAudioPermission();
+        } else {
+            // Android 10 and below
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        },
+                        PERMISSION_REQUEST_CODE);
+            } else {
+                proceedToApp();
+            }
+        }
+    }
+
+    private void checkAudioPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_MEDIA_AUDIO},
+                        PERMISSION_REQUEST_CODE);
+            } else {
+                proceedToApp();
+            }
+        } else {
+            proceedToApp();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ALL_FILES_ACCESS_REQUEST) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    checkAudioPermission();
+                } else {
+                    finish();
+                }
             }
         }
     }

@@ -5,6 +5,7 @@
 ![Musicq Logo](https://img.shields.io/badge/Musicq-Music%20Player-purple?style=for-the-badge&logo=music)
 
 **A powerful, feature-rich local music player for Android with Material 3 design**
+**Made with Claude 4.5 Sonnet**
 
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)

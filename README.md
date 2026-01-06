@@ -151,8 +151,8 @@ Musicq/
 ### Android Components
 - **MediaPlayer API** - Audio playback engine
 - **MediaSession API** - System media integration
-- **MediaStore API** - Music library scanning
-- **SQLite** - Playlist storage
+- **JAudiotagger API** - Music library scanning
+- **XSPF Playlist Management** - Playlist storage
 - **Foreground Service** - Background playback
 - **MediaMetadataRetriever** - Track information extraction
 
@@ -177,6 +177,7 @@ Musicq/
     implementation(libs.constraintlayout)
     implementation(libs.recyclerview)
     implementation(libs.media)
+    implementation(libs.jaudiotagger)
 ```
 
 ### WebGL Animation
@@ -269,7 +270,7 @@ Found a bug? Please open an [issue](https://github.com/Amorousstake5/Musicq/issu
 
 **If you like this project, please give it a ⭐!**
 
-Made with ❤️ by the Musicq Dev
+Made with ❤️ by Soumyajit Roy
 
 [Report Bug](https://github.com/Amorousstake5/Musicq/issues) • [Request Feature](https://github.com/Amorousstake5/Musicq/issues)
 

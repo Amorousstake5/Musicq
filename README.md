@@ -151,7 +151,7 @@ Musicq/
 ### Android Components
 - **MediaPlayer API** - Audio playback engine
 - **MediaSession API** - System media integration
-- **JAudiotagger API** - Music library scanning
+- **[JAudiotagger API](https://bitbucket.org/ijabz/jaudiotagger/src/master/)** - Music library scanning
 - **XSPF Playlist Management** - Playlist storage
 - **Foreground Service** - Background playback
 - **MediaMetadataRetriever** - Track information extraction

@@ -11,8 +11,6 @@
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-GPLv3-C20C4E.svg)](LICENSE)
 
-[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Build](#build-from-source) • [Tech Stack](#tech-stack)
-
 </div>
 
 ---
